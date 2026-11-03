@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Android App Template AR</string>
+    <string name="app_name">Visor de coisas que eu gosto Spawner</string>
     <string name="action_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
@@ -11,4 +11,12 @@
     <string name="camera">camera</string>
     <string name="change">change</string>
     <string name="profile">profile</string>
+    <string name="rotate">Girar</string>
+    <string name="summon_counter">Animais invocados: %1$d</string>
+    <string name="fire">Atirar</string>
+    <string name="crosshair">Mira</string>
+    <string name="ammo_counter">Munição: %1$d/%2$d</string>
+    <string name="reloading">Recarregando…</string>
+    <string name="target_health">Alvo: %1$s / %2$s</string>
+    <string name="target_dead">Alvo eliminado!</string>
 </resources>
