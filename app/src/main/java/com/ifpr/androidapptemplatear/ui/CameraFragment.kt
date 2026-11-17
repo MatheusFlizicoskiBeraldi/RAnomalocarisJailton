@@ -3,6 +3,8 @@ package com.ifpr.androidapptemplatear.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -12,6 +14,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -36,6 +39,7 @@ import io.github.sceneview.SceneView
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.math.Position
+import io.github.sceneview.math.Rotation
 import io.github.sceneview.node.ModelNode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -71,6 +75,12 @@ class CameraFragment : Fragment() {
     private var scoreText: TextView? = null
     private var timerText: TextView? = null
     private var timerJob: Job? = null
+    private var rotateButton: ExtendedFloatingActionButton? = null
+    private var summonCounter: TextView? = null
+    private var summonCount = 0
+    private var modelAngleY = 0f
+    private var toneGenerator: ToneGenerator? = null
+    private val animalModels = setOf("anomalocaris.glb", "baat outta hell.glb", "Tyrannosaurus Rex.glb")
 
     private var sceneView: SceneView? = null
     private var arView: ARSceneView? = null
@@ -226,6 +236,23 @@ class CameraFragment : Fragment() {
         }
         panel.addView(scoreText)
         panel.addView(timerText)
+
+        summonCounter = TextView(requireContext()).apply {
+            text = getString(R.string.summon_counter, summonCount)
+            textSize = 15f
+            setTextColor(Color.WHITE)
+        }
+        panel.addView(summonCounter)
+
+        rotateButton = ExtendedFloatingActionButton(requireContext()).apply {
+            text = getString(R.string.rotate)
+            setOnClickListener { rotateModel() }
+        }
+        layer.addView(rotateButton, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            Gravity.BOTTOM or Gravity.END
+        ).apply { rightMargin = dp(16); bottomMargin = dp(16) })
 
         layer.addView(
             panel,
@@ -744,6 +771,7 @@ class CameraFragment : Fragment() {
 
     private fun loadModel() {
         val scene = sceneView ?: return
+        modelAngleY = 0f
         val location = modelLocation(currentModelFile)
 
         if (location == null) {
@@ -810,6 +838,24 @@ class CameraFragment : Fragment() {
         }
     }
 
+    private fun rotateModel() {
+        val model = modelNode ?: return
+        modelAngleY = (modelAngleY + 45f) % 360f
+        model.rotation = Rotation(0f, modelAngleY, 0f)
+    }
+
+    private fun registrarInvocacaoAnimal() {
+        if (currentModelFile !in animalModels) return
+        summonCount++
+        summonCounter?.text = getString(R.string.summon_counter, summonCount)
+        runCatching {
+            if (toneGenerator == null) {
+                toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 75)
+            }
+            toneGenerator?.startTone(ToneGenerator.TONE_PROP_ACK, 180)
+        }
+    }
+
     private fun placeModel() {
         val ar = arView ?: return
 
@@ -832,6 +878,7 @@ class CameraFragment : Fragment() {
 
             anchorNode = anchor
             placementHit = null
+            registrarInvocacaoAnimal()
 
             placeButton?.apply {
                 text = "Reposicionar"
@@ -946,6 +993,8 @@ class CameraFragment : Fragment() {
     override fun onDestroyView() {
         timerJob?.cancel()
         timerJob = null
+        toneGenerator?.release()
+        toneGenerator = null
         availabilityJob?.cancel()
         availabilityJob = null
 
@@ -959,6 +1008,8 @@ class CameraFragment : Fragment() {
         endLayer = null
         scoreText = null
         timerText = null
+        summonCounter = null
+        rotateButton = null
         statusText = null
         placeButton = null
         container = null
