@@ -2,6 +2,7 @@ package com.ifpr.androidapptemplatear.ui
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 
 class SharedModelViewModel : ViewModel() {
@@ -14,6 +15,8 @@ class SharedModelViewModel : ViewModel() {
     val modelosEncontrados: LiveData<Set<String>> = _modelosEncontrados
 
     private val _jogoEncerrado = MutableLiveData(false)
+    private var prazoFinal: Long? = null
+    private val duracaoPartidaMs = 5 * 60 * 1000L
     val jogoEncerrado: LiveData<Boolean> = _jogoEncerrado
 
     fun selectModel(modelPath: String) {
@@ -35,6 +38,15 @@ class SharedModelViewModel : ViewModel() {
         return true
     }
 
+    fun iniciarCronometro() {
+        if (prazoFinal == null) prazoFinal = SystemClock.elapsedRealtime() + duracaoPartidaMs
+    }
+
+    fun segundosRestantes(): Long {
+        val prazo = prazoFinal ?: return duracaoPartidaMs / 1000L
+        return ((prazo - SystemClock.elapsedRealtime()).coerceAtLeast(0L) / 1000L)
+    }
+
     fun encerrarJogo() {
         _jogoEncerrado.value = true
     }
@@ -43,6 +55,7 @@ class SharedModelViewModel : ViewModel() {
         _modelosEncontrados.value = emptySet()
         _pontuacao.value = 0
         _jogoEncerrado.value = false
+        prazoFinal = SystemClock.elapsedRealtime() + duracaoPartidaMs
         selectedModel.value = "neutrofilo.glb"
     }
 }
