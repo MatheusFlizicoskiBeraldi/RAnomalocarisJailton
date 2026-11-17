@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.glide)
     implementation(libs.firebase.database.ktx)
+    // SceneView 2.x: dependências separadas para visualização 3D e ARCore.
+    implementation("io.github.sceneview:sceneview:2.2.1")
     implementation("io.github.sceneview:arsceneview:2.2.1")
     implementation("androidx.camera:camera-camera2:1.5.3")
     implementation("androidx.camera:camera-lifecycle:1.5.3")
