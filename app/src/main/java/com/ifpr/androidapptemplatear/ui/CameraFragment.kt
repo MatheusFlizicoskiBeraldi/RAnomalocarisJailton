@@ -279,10 +279,8 @@ class CameraFragment : Fragment() {
         timerJob?.cancel()
         localizacaoController.encerrar()
         placeButton?.isEnabled = false
-        loadJob?.cancel()
         availabilityJob?.cancel()
-        arWatchdogJob?.cancel()
-        cameraWatchdogJob?.cancel()
+        clearScene()
         cameraProvider?.unbindAll()
         cameraProvider = null
 
