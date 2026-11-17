@@ -179,9 +179,7 @@ class CameraFragment : Fragment() {
                 Mode.AR -> placeModel()
 
                 Mode.CAMERA,
-                Mode.STATIC -> {
-                    startPreview(useCamera = mode == Mode.CAMERA)
-                }
+                Mode.STATIC -> registrarInvocacaoAnimal()
 
                 Mode.CHECKING -> Unit
             }
