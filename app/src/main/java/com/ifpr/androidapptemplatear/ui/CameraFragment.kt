@@ -11,6 +11,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -66,6 +67,10 @@ class CameraFragment : Fragment() {
     private var placeButton: ExtendedFloatingActionButton? = null
     private var statusText: TextView? = null
     private var overlay: View? = null
+    private var endLayer: View? = null
+    private var scoreText: TextView? = null
+    private var timerText: TextView? = null
+    private var timerJob: Job? = null
 
     private var sceneView: SceneView? = null
     private var arView: ARSceneView? = null
@@ -142,6 +147,16 @@ class CameraFragment : Fragment() {
             sharedViewModel.selectModel(currentModelFile)
         }
 
+        sharedViewModel.pontuacao.observe(viewLifecycleOwner) { pontos ->
+            scoreText?.text = "Pontuação: $pontos"
+        }
+
+        sharedViewModel.modelosEncontrados.observe(viewLifecycleOwner) { encontrados ->
+            if (encontrados.size >= 3 && sharedViewModel.jogoEncerrado.value != true) {
+                finalizarPartida("Você encontrou todos os modelos!", venceu = true)
+            }
+        }
+
         sharedViewModel.selectedModel.observe(viewLifecycleOwner) { path ->
             if (!path.isNullOrBlank() && path != currentModelFile) {
                 currentModelFile = path
@@ -162,13 +177,18 @@ class CameraFragment : Fragment() {
             }
         }
 
+        sharedViewModel.iniciarCronometro()
+        iniciarCronometro()
         checkAvailability()
 
         val parent = container?.parent as? ViewGroup
 
         if (parent != null) {
             localizacaoController.conectar(parent) { arquivo ->
-                sharedViewModel.selectModel(arquivo)
+                if (sharedViewModel.jogoEncerrado.value != true) {
+                    sharedViewModel.selectModel(arquivo)
+                    sharedViewModel.registrarEncontro(arquivo)
+                }
             }
 
             placeButton?.bringToFront()
@@ -193,6 +213,19 @@ class CameraFragment : Fragment() {
         }
 
         panel.addView(statusText)
+
+        scoreText = TextView(requireContext()).apply {
+            text = "Pontuação: 0"
+            textSize = 16f
+            setTextColor(Color.WHITE)
+        }
+        timerText = TextView(requireContext()).apply {
+            text = "Tempo: 05:00"
+            textSize = 16f
+            setTextColor(Color.WHITE)
+        }
+        panel.addView(scoreText)
+        panel.addView(timerText)
 
         layer.addView(
             panel,
@@ -225,6 +258,74 @@ class CameraFragment : Fragment() {
      * Identificação por características comuns de emuladores.
      * Por escolha deste aplicativo, eles iniciam sem ARCore.
      */
+    private fun iniciarCronometro() {
+        timerJob?.cancel()
+        timerJob = viewLifecycleOwner.lifecycleScope.launch {
+            while (isActive && sharedViewModel.jogoEncerrado.value != true) {
+                val restante = sharedViewModel.segundosRestantes()
+                timerText?.text = "Tempo: %02d:%02d".format(restante / 60, restante % 60)
+                if (restante <= 0L) {
+                    finalizarPartida("O tempo acabou antes de encontrar os três modelos.", venceu = false)
+                    break
+                }
+                delay(1000L)
+            }
+        }
+    }
+
+    private fun finalizarPartida(motivo: String, venceu: Boolean) {
+        if (sharedViewModel.jogoEncerrado.value == true) return
+        sharedViewModel.encerrarJogo()
+        timerJob?.cancel()
+        localizacaoController.encerrar()
+        placeButton?.isEnabled = false
+        loadJob?.cancel()
+        availabilityJob?.cancel()
+        arWatchdogJob?.cancel()
+        cameraWatchdogJob?.cancel()
+        cameraProvider?.unbindAll()
+        cameraProvider = null
+
+        val parent = container?.parent as? ViewGroup ?: return
+        val painel = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(28), dp(28), dp(28), dp(28))
+            setBackgroundColor(Color.argb(245, 18, 22, 28))
+        }
+        painel.addView(TextView(requireContext()).apply {
+            text = if (venceu) "MISSÃO CONCLUÍDA" else "GAME OVER"
+            textSize = 28f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+        })
+        painel.addView(TextView(requireContext()).apply {
+            text = "$motivo\nPontuação final: ${sharedViewModel.pontuacao.value ?: 0}"
+            textSize = 18f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(16), 0, dp(20))
+        })
+        painel.addView(Button(requireContext()).apply {
+            text = "Jogar novamente"
+            setOnClickListener {
+                sharedViewModel.reiniciarPartida()
+                requireActivity().recreate()
+            }
+        })
+        val camada = FrameLayout(requireContext())
+        camada.addView(painel, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ))
+        parent.addView(camada, ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ))
+        camada.bringToFront()
+        endLayer = camada
+    }
+
     private fun isEmulator(): Boolean {
         return Build.FINGERPRINT.startsWith("generic") ||
                 Build.FINGERPRINT.startsWith("unknown") ||
@@ -845,6 +946,8 @@ class CameraFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        timerJob?.cancel()
+        timerJob = null
         availabilityJob?.cancel()
         availabilityJob = null
 
@@ -855,6 +958,9 @@ class CameraFragment : Fragment() {
         }
 
         overlay = null
+        endLayer = null
+        scoreText = null
+        timerText = null
         statusText = null
         placeButton = null
         container = null
