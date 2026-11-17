@@ -79,14 +79,14 @@ class LocalizacaoController(
 
         // Parque Ambiental (Centro)
         Lugar(
-            latitude = -25.0944639,
-            longitude = -50.153725
+            latitude = -25.095192,
+            longitude = -50.154734
         ),
 
         // Estação Saudade
         Lugar(
-            latitude = -25.09338,
-            longitude = -50.15326
+            latitude = -25.093349,
+            longitude = -50.153234
         )
     )
 
