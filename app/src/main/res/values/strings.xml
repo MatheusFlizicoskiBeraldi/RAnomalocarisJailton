@@ -11,4 +11,6 @@
     <string name="camera">camera</string>
     <string name="change">change</string>
     <string name="profile">profile</string>
+    <string name="rotate">Girar</string>
+    <string name="summon_counter">Animais invocados: %1$d</string>
 </resources>
