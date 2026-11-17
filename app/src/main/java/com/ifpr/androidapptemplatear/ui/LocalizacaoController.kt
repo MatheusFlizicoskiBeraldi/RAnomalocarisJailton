@@ -75,6 +75,18 @@ class LocalizacaoController(
         Lugar(
             latitude = -25.246243,
             longitude = -50.021782
+        ),
+
+        // Parque Ambiental (Centro)
+        Lugar(
+            latitude = -25.0944639,
+            longitude = -50.153725
+        ),
+
+        // Estação Saudade
+        Lugar(
+            latitude = -25.09338,
+            longitude = -50.15326
         )
     )
 
@@ -339,6 +351,14 @@ class LocalizacaoController(
                 textoBotao = "Tentar novamente"
             )
         }
+    }
+
+    /**
+     * Interrompe definitivamente os encontros quando a partida termina.
+     */
+    fun encerrar() {
+        parar()
+        aoEncontrarModelo = null
     }
 
     private fun parar() {
