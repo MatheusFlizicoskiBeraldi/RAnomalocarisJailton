@@ -31,7 +31,7 @@ class SharedModelViewModel : ViewModel() {
         if (_jogoEncerrado.value == true) return false
 
         val encontrados = _modelosEncontrados.value.orEmpty()
-        if (!encontrados.add(arquivo)) return false
+        if (arquivo in encontrados) return false
 
         _modelosEncontrados.value = encontrados + arquivo
         _pontuacao.value = (_pontuacao.value ?: 0) + 10
